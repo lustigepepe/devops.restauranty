@@ -13,3 +13,5 @@ Solution/k8s/secrets.yaml
 Solution/terraform/terraform.tfstate
 Solution/terraform/terraform.tfstate.backup
 Solution/k8s/secrets.yaml
+Solution/terraform/.terraform/
+Solution/terraform/.terraform.lock.hcl
