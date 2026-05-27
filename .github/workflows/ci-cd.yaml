@@ -33,7 +33,7 @@ jobs:
       - name: Build & Push auth
         uses: docker/build-push-action@v5
         with:
-          context: ./backend/auth
+          context: .
           file: ./backend/auth/Dockerfile.auth
           platforms: linux/amd64,linux/arm64
           push: ${{ github.ref == 'refs/heads/main' }}
@@ -42,7 +42,7 @@ jobs:
       - name: Build & Push discounts
         uses: docker/build-push-action@v5
         with:
-          context: ./backend/discounts
+          context: .
           file: ./backend/discounts/Dockerfile.discounts
           platforms: linux/amd64,linux/arm64
           push: ${{ github.ref == 'refs/heads/main' }}
@@ -51,7 +51,7 @@ jobs:
       - name: Build & Push items
         uses: docker/build-push-action@v5
         with:
-          context: ./backend/items
+          context: .
           file: ./backend/items/Dockerfile.items
           platforms: linux/amd64,linux/arm64
           push: ${{ github.ref == 'refs/heads/main' }}
@@ -60,7 +60,7 @@ jobs:
       - name: Build & Push client
         uses: docker/build-push-action@v5
         with:
-          context: ./client
+          context: .
           file: ./client/Dockerfile.client
           platforms: linux/amd64,linux/arm64
           push: ${{ github.ref == 'refs/heads/main' }}
