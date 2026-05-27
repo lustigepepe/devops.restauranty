@@ -59,6 +59,11 @@ CLOUD_API_KEY=your_api_key
 CLOUD_API_SECRET=your_api_secret
 ```
 
+### 2.5 Reach out Grafana
+
+kubectl port-forward svc/monitoring-grafana 3000:80 -n monitoring
+open http://localhost:3000
+
 ### 3. Run with Docker Compose
 
 ```bash
@@ -217,4 +222,5 @@ kubectl describe ingress restauranty-ingress -n restauranty
 ## Security
 
 See [SECURITY.md](./SECURITY.md) for details on secret management, network security, authentication, and compliance.
+
 # CI/CD test
