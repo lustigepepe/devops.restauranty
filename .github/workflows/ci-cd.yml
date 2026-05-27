@@ -8,9 +8,6 @@ on:
     branches:
       - main
 
-env:
-  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-
 jobs:
   # ── Build & Push Docker Images ─────────────────────────────────────────────
   build-and-push:
@@ -33,7 +30,7 @@ jobs:
       - name: Build & Push auth
         uses: docker/build-push-action@v6.16.0
         with:
-          context: .
+          context: ./backend/auth
           file: ./backend/auth/Dockerfile.auth
           platforms: linux/amd64,linux/arm64
           push: ${{ github.ref == 'refs/heads/main' }}
@@ -42,7 +39,7 @@ jobs:
       - name: Build & Push discounts
         uses: docker/build-push-action@v6.16.0
         with:
-          context: .
+          context: ./backend/discounts
           file: ./backend/discounts/Dockerfile.discounts
           platforms: linux/amd64,linux/arm64
           push: ${{ github.ref == 'refs/heads/main' }}
@@ -51,7 +48,7 @@ jobs:
       - name: Build & Push items
         uses: docker/build-push-action@v6.16.0
         with:
-          context: .
+          context: ./backend/items
           file: ./backend/items/Dockerfile.items
           platforms: linux/amd64,linux/arm64
           push: ${{ github.ref == 'refs/heads/main' }}
@@ -60,7 +57,7 @@ jobs:
       - name: Build & Push client
         uses: docker/build-push-action@v6.16.0
         with:
-          context: .
+          context: ./client
           file: ./client/Dockerfile.client
           platforms: linux/amd64,linux/arm64
           push: ${{ github.ref == 'refs/heads/main' }}
