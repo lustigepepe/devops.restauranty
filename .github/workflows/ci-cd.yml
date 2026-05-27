@@ -1,5 +1,5 @@
 name: CI/CD Pipeline
-#test
+
 on:
   push:
     branches:
@@ -31,7 +31,7 @@ jobs:
         uses: docker/build-push-action@v6.16.0
         with:
           context: ./backend/auth
-          file: ./backend/auth/Dockerfile.auth
+          file: Dockerfile.auth
           platforms: linux/amd64,linux/arm64
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/restauranty-auth:latest
@@ -40,7 +40,7 @@ jobs:
         uses: docker/build-push-action@v6.16.0
         with:
           context: ./backend/discounts
-          file: ./backend/discounts/Dockerfile.discounts
+          file: Dockerfile.discounts
           platforms: linux/amd64,linux/arm64
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/restauranty-discounts:latest
@@ -49,7 +49,7 @@ jobs:
         uses: docker/build-push-action@v6.16.0
         with:
           context: ./backend/items
-          file: ./backend/items/Dockerfile.items
+          file: Dockerfile.items
           platforms: linux/amd64,linux/arm64
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/restauranty-items:latest
@@ -58,7 +58,7 @@ jobs:
         uses: docker/build-push-action@v6.16.0
         with:
           context: ./client
-          file: ./client/Dockerfile.client
+          file: Dockerfile.client
           platforms: linux/amd64,linux/arm64
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/restauranty-client:latest
