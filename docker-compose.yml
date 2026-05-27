@@ -1,0 +1,137 @@
+version: "3.9"
+
+# ─── Shared env for all backend services ──────────────────────────────────────
+x-backend-env: &backend-env
+  MONGODB_URI: mongodb://mongo:27017/restauranty
+  CLOUD_NAME: ${CLOUD_NAME}
+  CLOUD_API_KEY: ${CLOUD_API_KEY}
+  CLOUD_API_SECRET: ${CLOUD_API_SECRET}
+  SECRET: ${SECRET}
+
+services:
+  # ── MongoDB ────────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    container_name: restauranty-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - restauranty-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Auth microservice ──────────────────────────────────────────────────────
+  auth:
+    build:
+      context: ./backend/auth
+      dockerfile: Dockerfile.auth # path relative to context
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    image: restauranty-auth:latest
+    container_name: restauranty-auth
+    ports:
+      - "3001:3001"
+    environment:
+      <<: *backend-env
+      PORT: 3001
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - restauranty-net
+    restart: unless-stopped
+
+  # ── Discounts microservice ─────────────────────────────────────────────────
+  discounts:
+    build:
+      context: ./backend/discounts
+      dockerfile: Dockerfile.discounts
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    image: 0098765/restauranty-discounts:latest
+    container_name: restauranty-discounts
+    ports:
+      - "3002:3002"
+    environment:
+      <<: *backend-env
+      PORT: 3002
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - restauranty-net
+    restart: unless-stopped
+
+  # ── Items microservice ─────────────────────────────────────────────────────
+  items:
+    build:
+      context: ./backend/items
+      dockerfile: Dockerfile.items
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    image: 0098765/restauranty-items:latest
+    container_name: restauranty-items
+    ports:
+      - "3003:3003"
+    environment:
+      <<: *backend-env
+      PORT: 3003
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - restauranty-net
+    restart: unless-stopped
+
+  # ── React frontend ─────────────────────────────────────────────────────────
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.client
+      platforms:
+        - linux/amd64
+        - linux/arm64
+      args:
+        # All API calls from the browser go through HAProxy on port 80
+        REACT_APP_SERVER_URL: ""
+    image: 0098765/restauranty-client:latest
+    container_name: restauranty-client
+    ports:
+      - "3000:3000"
+    networks:
+      - restauranty-net
+    restart: unless-stopped
+
+  # ── HAProxy (unifies all services under port 80) ───────────────────────────
+  haproxy:
+    image: haproxy:2.9-alpine
+    container_name: restauranty-haproxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - auth
+      - discounts
+      - items
+      - client
+    networks:
+      - restauranty-net
+    restart: unless-stopped
+
+# ─── Volumes ──────────────────────────────────────────────────────────────────
+volumes:
+  mongo-data:
+
+# ─── Networks ─────────────────────────────────────────────────────────────────
+networks:
+  restauranty-net:
+    driver: bridge
