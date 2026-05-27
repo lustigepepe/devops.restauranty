@@ -1,0 +1,115 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+
+jobs:
+  # ── Build & Push Docker Images ─────────────────────────────────────────────
+  build-and-push:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build & Push auth
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/auth
+          file: ./backend/auth/Dockerfile.auth
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/restauranty-auth:latest
+
+      - name: Build & Push discounts
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/discounts
+          file: ./backend/discounts/Dockerfile.discounts
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/restauranty-discounts:latest
+
+      - name: Build & Push items
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/items
+          file: ./backend/items/Dockerfile.items
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/restauranty-items:latest
+
+      - name: Build & Push client
+        uses: docker/build-push-action@v5
+        with:
+          context: ./client
+          file: ./client/Dockerfile.client
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/restauranty-client:latest
+          build-args: |
+            REACT_APP_SERVER_URL=
+
+  # ── Deploy to AKS ──────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to AKS
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Get AKS credentials
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: hagen-restauranty-rg
+          cluster-name: restauranty-aks
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/mongo/
+          kubectl apply -f k8s/auth/
+          kubectl apply -f k8s/discounts/
+          kubectl apply -f k8s/items/
+          kubectl apply -f k8s/client/
+          kubectl apply -f k8s/ingress.yaml
+
+      - name: Restart deployments to pull latest images
+        run: |
+          kubectl rollout restart deployment/auth -n restauranty
+          kubectl rollout restart deployment/discounts -n restauranty
+          kubectl rollout restart deployment/items -n restauranty
+          kubectl rollout restart deployment/client -n restauranty
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/auth -n restauranty
+          kubectl rollout status deployment/discounts -n restauranty
+          kubectl rollout status deployment/items -n restauranty
+          kubectl rollout status deployment/client -n restauranty
