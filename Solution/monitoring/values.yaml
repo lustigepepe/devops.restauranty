@@ -1,0 +1,21 @@
+grafana:
+  adminPassword: "ChangeMe!"
+  service:
+    type: ClusterIP   # access via kubectl port-forward, not exposed publicly
+
+prometheus:
+  prometheusSpec:
+    retention: 7d
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "250m"
+    # auto-discover ServiceMonitors and PodMonitors across all namespaces
+    podMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+
+alertmanager:
+  enabled: true
